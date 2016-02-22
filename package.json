@@ -1,0 +1,21 @@
+{
+  "name": "dermail-tx",
+  "version": "1.0.0",
+  "description": "Sending component",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.fm:zllovesuki/dermail-tx.git"
+  },
+  "author": "Jerry Chen <me@jerrychen.me>",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "express": "^4.13.4",
+    "lodash": "^4.5.1",
+    "nodemailer": "^2.2.1"
+  }
+}
