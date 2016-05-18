@@ -1,18 +1,18 @@
 module.exports = function() {
-	var nodemailer = require('nodemailer'),
-		os = require('os'),
+	var Queue = require('bull'),
 		express = require('express'),
 		bodyParser = require('body-parser'),
-		_ = require('lodash'),
+		Queue = require('bull'),
+		config = require('./config'),
+		Promise = require('bluebird'),
 		app = express();
-
-	var transporter = nodemailer.createTransport({
-		direct: true,
-		name: os.hostname() + '.dermail.net'
-	})
 
 	app.use(bodyParser.json({limit: '55mb'}));
 	app.use(bodyParser.urlencoded({ extended: true, limit: '55mb' }));
+
+	app.post('/queue', function(req, res, next) {
+		
+	});
 
 	app.post('/tx-hook', function(req, res, next) {
 		var compose = req.body;
