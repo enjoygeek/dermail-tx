@@ -15,8 +15,11 @@ var self = module.exports = {
 		return apiEndpoint + '/v' + self.apiVersion;
 	},
 	tx: {
-		callback: function() {
-			return self.apiEndpoint() + '/rx/callback';
+		hook: function() {
+			return self.apiEndpoint() + '/rx/store-tx';
+		},
+		notify: function() {
+			return self.apiEndpoint() + '/rx/notify';
 		}
 	}
 }

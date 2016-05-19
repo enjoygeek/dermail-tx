@@ -17,8 +17,12 @@
     "body-parser": "^1.15.0",
     "bull": "^1.0.0-rc1",
     "express": "^4.13.4",
+    "html-to-text": "^2.1.0",
     "lodash": "^4.5.1",
+    "mailcomposer": "^3.9.0",
+    "mailparser": "^0.5.3",
     "nodemailer": "^2.2.1",
-    "redis": "^2.6.0-2"
+    "redis": "^2.6.0-2",
+    "superagent": "^2.0.0-alpha.3"
   }
 }

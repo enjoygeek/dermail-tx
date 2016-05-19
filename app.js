@@ -10,19 +10,26 @@ module.exports = function() {
 	app.use(bodyParser.json({limit: '55mb'}));
 	app.use(bodyParser.urlencoded({ extended: true, limit: '55mb' }));
 
-	app.post('/queue', function(req, res, next) {
-		
-	});
+	var messageQ = new Queue('dermail-tx', config.redisQ.port, config.redisQ.host);
 
 	app.post('/tx-hook', function(req, res, next) {
+
+		var remoteSecret = req.body.remoteSecret || null;
+
+		if (remoteSecret !== config.remoteSecret) {
+			return res.status(200).send({ok: false, error: 'Invalid remoteSecret.'});
+		}
+
 		var compose = req.body;
-		transporter.sendMail(compose, function(err, info) {
-			res.setHeader('Content-Type', 'application/json');
-			res.status(200).send({
-				error: err,
-				info: info
-			});
+
+		return messageQ.add({
+			type: 'sendMail',
+			payload: compose
+		}, config.Qconfig)
+		.then(function() {
+			return res.status(200).send({ok: true});
 		})
+
 	});
 
 	// catch 404 and forward to error handler
