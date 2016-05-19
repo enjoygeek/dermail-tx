@@ -1,0 +1,23 @@
+{
+	"apps": [
+		{
+			"name": "TX",
+			"script": "TX.js",
+			"env_dev": {
+				"PORT": 4430,
+			},
+			"watch": true,
+			"restart_delay": 5000,
+			"exec_mode": "cluster",
+			"instances": 4
+		},
+		{
+			"name": "TX-Worker",
+			"script": "Worker.js",
+			"watch": true,
+			"restart_delay": 5000,
+			"exec_mode": "cluster",
+			"instances": 4
+		}
+	]
+}
