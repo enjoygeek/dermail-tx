@@ -90,6 +90,14 @@ start()
 					message.accountId = data.accountId;
 					message.myAddress = myAddress;
 
+					// Extra data to help with remote debugging
+					message.TXExtra = {
+						attemptsMade: job.attemptsMade,
+						maxAttempts: job.attempts,
+						delay: job.delay,
+						jobId: job.jobId
+					};
+
 					request
 					.post(config.tx.hook())
 					.timeout(10000)
