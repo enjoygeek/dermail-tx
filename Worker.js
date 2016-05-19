@@ -145,6 +145,10 @@ start()
 					return done(err);
 				}
 				console.log(info);
+
+				if (info.accepted.length === 0) {
+					return done(info);
+				}
 				return enqueue('notify', {
 					remoteSecret: config.remoteSecret,
 					userId: data.userId,
