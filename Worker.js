@@ -46,15 +46,9 @@ start()
 		switch (type) {
 			case 'sendMail':
 
-			messageQ.add({
-				type: 'doSendMail',
-				payload: data
-			}, config.Qconfig)
+			return enqueue('doSendMail', data)
 			.then(function() {
-				messageQ.add({
-					type: 'callback',
-					payload: data
-				}, config.Qconfig);
+				enqueue('callback', data)
 			})
 			.then(function() {
 				return done();
@@ -107,15 +101,12 @@ start()
 							return done(err);
 						}
 						if (res.body.ok === true) {
-							return messageQ.add({
-								type: 'notify',
-								payload: {
-									remoteSecret: config.remoteSecret,
-									userId: data.userId,
-									level: 'success',
-									msg: 'Message saved to Sent folder.'
-								}
-							}, config.Qconfig)
+							return enqueue('notify', {
+								remoteSecret: config.remoteSecret,
+								userId: data.userId,
+								level: 'success',
+								msg: 'Message saved to Sent folder.'
+							})
 							.then(function() {
 								return done();
 							})
@@ -146,15 +137,12 @@ start()
 					return done(err);
 				}
 				console.log(info);
-				return messageQ.add({
-					type: 'notify',
-					payload: {
-						remoteSecret: config.remoteSecret,
-						userId: data.userId,
-						level: 'success',
-						msg: 'Message sent by ' + hostname
-					}
-				}, config.Qconfig)
+				return enqueue('notify', {
+					remoteSecret: config.remoteSecret,
+					userId: data.userId,
+					level: 'success',
+					msg: 'Message sent by ' + hostname
+				})
 				.then(function() {
 					return done();
 				})
