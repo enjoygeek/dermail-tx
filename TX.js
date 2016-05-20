@@ -13,7 +13,7 @@ var	fs = require('fs'),
 
 if (!!config.graylog) {
 	log = bunyan.createLogger({
-		name: 'TX-GC',
+		name: 'TX',
 		streams: [{
 			type: 'raw',
 			stream: stream.forBunyan(config.graylog)
@@ -21,7 +21,7 @@ if (!!config.graylog) {
 	});
 }else{
 	log = bunyan.createLogger({
-		name: 'TX-GC'
+		name: 'TX'
 	});
 }
 
