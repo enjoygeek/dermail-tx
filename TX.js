@@ -5,9 +5,27 @@ var	fs = require('fs'),
 	options = {
 		key: fs.readFileSync(path.join(__dirname, './ssl/key')),
 		cert: fs.readFileSync(path.join(__dirname, './ssl/chain'))
-	};
+	},
+	config = require('./config'),
+	bunyan = require('bunyan'),
+	stream = require('gelf-stream'),
+	log;
+
+if (!!config.graylog) {
+	log = bunyan.createLogger({
+		name: 'TX-GC',
+		streams: [{
+			type: 'raw',
+			stream: stream.forBunyan(config.graylog)
+		}]
+	});
+}else{
+	log = bunyan.createLogger({
+		name: 'TX-GC'
+	});
+}
 
 var app = require('./app')();
 var port = process.env.PORT || 443;
 https.createServer(options, app).listen(port);
-console.log('Process ' + process.pid + ' is listening on port ' + port + ' to incoming TX requests.')
+log.info('Process ' + process.pid + ' is listening on port ' + port + ' to incoming TX requests.')

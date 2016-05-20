@@ -10,6 +10,20 @@ module.exports = function() {
 	app.use(bodyParser.json({limit: '55mb'}));
 	app.use(bodyParser.urlencoded({ extended: true, limit: '55mb' }));
 
+	if (!!config.graylog) {
+		app.use(require('express-bunyan-logger')({
+			name: 'TX',
+			streams: [{
+				type: 'raw',
+				stream: require('gelf-stream').forBunyan(config.graylog)
+			}]
+		}));
+	}else{
+		app.use(require('express-bunyan-logger')({
+			name: 'TX'
+		}));
+	}
+
 	var messageQ = new Queue('dermail-tx', config.redisQ.port, config.redisQ.host);
 
 	app.post('/tx-hook', function(req, res, next) {
