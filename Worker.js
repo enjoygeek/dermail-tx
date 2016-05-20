@@ -39,7 +39,8 @@ var start = function() {
 		transporter = nodemailer.createTransport({
 			direct: true,
 			name: hostname + '.dermail.net'
-		})
+		});
+		log.info('Process ' + process.pid + ' is running as an TX-Worker.');
 		return resolve();
 	});
 }
