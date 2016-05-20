@@ -10,13 +10,29 @@ var os = require('os'),
 	nodemailer = require('nodemailer'),
 	hostname = os.hostname(),
 	transporter,
-	fs = Promise.promisifyAll(require('fs'));
+	fs = Promise.promisifyAll(require('fs')),
+	bunyan = require('bunyan'),
+	stream = require('gelf-stream'),
+	log;
 
 Promise.promisifyAll(redis.RedisClient.prototype);
 
 var messageQ = new Queue('dermail-tx', config.redisQ.port, config.redisQ.host);
 var redisStore = redis.createClient(config.redisQ);
-var debug = !!config.debug;
+
+if (!!config.graylog) {
+	log = bunyan.createLogger({
+		name: 'TX-Worker',
+		streams: [{
+			type: 'raw',
+			stream: stream.forBunyan(config.graylog)
+		}]
+	});
+}else{
+	log = bunyan.createLogger({
+		name: 'TX-Worker'
+	});
+}
 
 var start = function() {
 	return new Promise(function(resolve, reject) {
@@ -43,6 +59,15 @@ start()
 		var type = data.type;
 		data = data.payload;
 
+		log.info('Received Job: ', job);
+
+		var callback = function(err) {
+			if (err) {
+				log.error(err);
+			}
+			return done(err);
+		}
+
 		switch (type) {
 			case 'sendMail':
 
@@ -51,10 +76,10 @@ start()
 				enqueue('callback', data)
 			})
 			.then(function() {
-				return done();
+				return callback();
 			})
 			.catch(function(e) {
-				return done(e);
+				return callback(e);
 			})
 
 			break;
@@ -105,8 +130,7 @@ start()
 					.set('Accept', 'application/json')
 					.end(function(err, res){
 						if (err) {
-							if (debug) console.log(err);
-							return done(err);
+							return callback(err);
 						}
 						if (res.body.ok === true) {
 							return enqueue('notify', {
@@ -116,15 +140,13 @@ start()
 								msg: 'Message saved to Sent folder.'
 							})
 							.then(function() {
-								return done();
+								return callback();
 							})
 							.catch(function(e) {
-								console.log(e);
-								return done();
+								return callback();
 							})
 						}else{
-							if (debug) console.dir(res.body);
-							return done(res.body);
+							return callback(res.body);
 						}
 					});
 				});
@@ -132,7 +154,7 @@ start()
 				stream.pipe(mailparser);
 
 			}catch(e) {
-				return done(e);
+				return callback(e);
 			}
 
 			break;
@@ -141,13 +163,13 @@ start()
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
-					console.log(err);
-					return done(err);
+					return callback(err);
 				}
-				console.log(info);
+
+				log.info('Returned info', info);
 
 				if (info.accepted.length === 0) {
-					return done(info);
+					return callback(info);
 				}
 				return enqueue('notify', {
 					remoteSecret: config.remoteSecret,
@@ -156,11 +178,10 @@ start()
 					msg: 'Message sent by ' + hostname
 				})
 				.then(function() {
-					return done();
+					return callback();
 				})
 				.catch(function(e) {
-					console.log(e);
-					return done();
+					return callback();
 				})
 			})
 
@@ -175,14 +196,12 @@ start()
 			.set('Accept', 'application/json')
 			.end(function(err, res){
 				if (err) {
-					if (debug) console.log(err);
-					return done(err);
+					return callback(err);
 				}
 				if (res.body.ok === true) {
-					return done();
+					return callback();
 				}else{
-					if (debug) console.dir(res.body);
-					return done(res.body);
+					return callback(res.body);
 				}
 			});
 
@@ -191,5 +210,5 @@ start()
 	});
 })
 .catch(function(e) {
-	if (debug) console.log(e);
+	log.error(e);
 })

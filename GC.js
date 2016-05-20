@@ -6,7 +6,7 @@ var messageQ = new Queue('dermail-tx', config.redisQ.port, config.redisQ.host);
 
 if (!!config.graylog) {
 	log = require('bunyan').createLogger({
-		name: 'API-GC',
+		name: 'TX-GC',
 		streams: [{
 			type: 'raw',
 			stream: require('gelf-stream').forBunyan(config.graylog)
@@ -14,7 +14,7 @@ if (!!config.graylog) {
 	});
 }else{
 	log = require('bunyan').createLogger({
-		name: 'API-GC'
+		name: 'TX-GC'
 	});
 }
 
