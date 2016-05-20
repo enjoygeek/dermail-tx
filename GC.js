@@ -9,7 +9,7 @@ if (!!config.graylog) {
 		name: 'TX-GC',
 		streams: [{
 			type: 'raw',
-			stream: require('gelf-stream').forBunyan(config.graylog)
+			stream: require('gelf-stream').forBunyan(config.graylog.host, config.graylog.port)
 		}]
 	});
 }else{
