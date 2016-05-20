@@ -19,7 +19,7 @@
     "bunyan": "^1.8.1",
     "express": "^4.13.4",
     "express-bunyan-logger": "^1.2.0",
-    "gelf-stream": "^1.1.1",
+    "gelf-stream": "git+https://github.com/zllovesuki/gelf-stream.git",
     "html-to-text": "^2.1.0",
     "lodash": "^4.5.1",
     "mailcomposer": "^3.9.0",
