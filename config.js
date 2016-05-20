@@ -10,6 +10,7 @@ var self = module.exports = {
 	},
 	debug: require('./config.json').debug,
 	cleanInterval: require('./config.json').cleanInterval || 10,
+	graylog: require('./config.json').graylog || null,
 	remoteSecret: require('./config.json').remoteSecret,
 	apiEndpoint: function() {
 		var apiEndpoint = require('./config.json').apiEndpoint;
