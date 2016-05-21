@@ -167,7 +167,7 @@ start()
 					return callback(err);
 				}
 
-				log.info('Returned info', info);
+				log.info({ message: 'Outbound status', info: info });
 
 				if (info.accepted.length === 0) {
 					return callback(info);
