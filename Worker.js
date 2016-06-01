@@ -55,7 +55,7 @@ var start = function() {
 
 			transporter = nodemailer.createTransport({
 				direct: true,
-				name: hostname + tx.domainName
+				name: hostname + '.' + tx.domainName
 			});
 
 			transporter.use('stream', require('nodemailer-dkim').signer({
