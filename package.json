@@ -1,6 +1,6 @@
 {
   "name": "dermail-tx",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Sending component",
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,7 @@
     "mailcomposer": "^3.9.0",
     "mailparser": "^0.5.3",
     "nodemailer": "^2.2.1",
+    "nodemailer-dkim": "^1.0.4",
     "redis": "^2.6.0-2",
     "superagent": "^2.0.0-alpha.3"
   }

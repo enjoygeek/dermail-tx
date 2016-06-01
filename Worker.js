@@ -36,12 +36,37 @@ if (!!config.graylog) {
 
 var start = function() {
 	return new Promise(function(resolve, reject) {
-		transporter = nodemailer.createTransport({
-			direct: true,
-			name: hostname + '.dermail.net'
+		request
+		.post(config.tx.setup())
+		.timeout(10000)
+		.send({
+			remoteSecret: config.remoteSecret
+		})
+		.set('Accept', 'application/json')
+		.end(function(err, res){
+			if (err) {
+				return reject(err);
+			}
+			if (res.body.ok !== true) {
+				return reject(new Error('Cannot get S3 credentials.'));
+			}
+
+			var tx = res.body;
+
+			transporter = nodemailer.createTransport({
+				direct: true,
+				name: hostname + tx.domainName
+			});
+
+			transporter.use('stream', require('nodemailer-dkim').signer({
+				domainName: tx.domainName,
+				keySelector: tx.dkimSelector,
+				privateKey: tx.key
+			}));
+
+			log.info('Process ' + process.pid + ' is running as an TX-Worker.');
+			return resolve();
 		});
-		log.info('Process ' + process.pid + ' is running as an TX-Worker.');
-		return resolve();
 	});
 }
 

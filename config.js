@@ -16,6 +16,9 @@ var self = module.exports = {
 		return apiEndpoint + '/v' + self.apiVersion;
 	},
 	tx: {
+		setup: function() {
+			return self.apiEndpoint() + '/rx/setup-tx';
+		},
 		hook: function() {
 			return self.apiEndpoint() + '/rx/store-tx';
 		},
