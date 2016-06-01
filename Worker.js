@@ -64,7 +64,7 @@ start()
 
 		var callback = function(err) {
 			if (err) {
-				log.error({ message: 'Job ' + type + ' returns an error.', error: err });
+				log.error({ message: 'Job ' + type + ' returns an error.', error: '[' + e.name + '] ' + e.message, stack: e.stack });
 			}
 			return done(err);
 		}
