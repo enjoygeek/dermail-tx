@@ -79,7 +79,7 @@ var enqueue = function(type, payload) {
 
 start()
 .then(function() {
-	messageQ.process(function(job, done) {
+	messageQ.process(3, function(job, done) {
 
 		var data = job.data;
 		var type = data.type;
