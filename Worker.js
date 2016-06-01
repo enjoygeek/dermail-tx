@@ -62,11 +62,11 @@ start()
 
 		log.info({ message: 'Received Job: ' + type, payload: data });
 
-		var callback = function(err) {
-			if (err) {
+		var callback = function(e) {
+			if (e) {
 				log.error({ message: 'Job ' + type + ' returns an error.', error: '[' + e.name + '] ' + e.message, stack: e.stack });
 			}
-			return done(err);
+			return done(e);
 		}
 
 		switch (type) {
