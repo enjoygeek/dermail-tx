@@ -126,9 +126,6 @@ start()
 					message.date = message.date.toISOString();
 					message.html = message.html || '';
 
-					// Compatible with RX
-					message._messageId = message.messageId;
-
 					// Compatibility with MTA-Worker
 					message.text = htmlToText.fromString(message.html);
 
