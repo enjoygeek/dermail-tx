@@ -189,6 +189,7 @@ start()
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
+					log.error({ message: 'sendMail returns an error, info attached', info: info })
 					return callback(err);
 				}
 
