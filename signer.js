@@ -43,6 +43,8 @@ function DKIMSigner(options) {
 		'subject',
 		'to',
 		'cc',
+		'date',
+		'message-id',
 		'mime-version',
 		'content-type',
 		'content-transfer-encoding',
