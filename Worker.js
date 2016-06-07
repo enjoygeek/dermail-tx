@@ -9,7 +9,6 @@ var os = require('os'),
 	htmlToText = require('html-to-text'),
 	nodemailer = require('nodemailer'),
 	hostname = os.hostname(),
-	transporter,
 	fs = Promise.promisifyAll(require('fs')),
 	bunyan = require('bunyan'),
 	stream = require('gelf-stream'),
@@ -53,19 +52,8 @@ var start = function() {
 
 			var tx = res.body;
 
-			transporter = nodemailer.createTransport({
-				direct: true,
-				name: hostname + '.' + tx.domainName
-			});
-
-			transporter.use('stream', require('nodemailer-dkim').signer({
-				domainName: tx.domainName,
-				keySelector: tx.dkimSelector,
-				privateKey: tx.key
-			}));
-
 			log.info('Process ' + process.pid + ' is running as an TX-Worker.');
-			return resolve();
+			return resolve(tx);
 		});
 	});
 }
@@ -78,7 +66,7 @@ var enqueue = function(type, payload) {
 }
 
 start()
-.then(function() {
+.then(function(tx) {
 	messageQ.process(3, function(job, done) {
 
 		var data = job.data;
@@ -186,6 +174,20 @@ start()
 			break;
 
 			case 'doSendMail':
+
+			var transporter = nodemailer.createTransport({
+				direct: true,
+				name: hostname + '.' + tx.domainName
+			});
+
+			if (typeof data.dkim === 'object') {
+				var pemKey = '-----BEGIN RSA PRIVATE KEY-----\r\n' + data.dkim.privateKey.replace(/.{78}/g, '$&\r\n') + '\r\n-----END RSA PRIVATE KEY-----';
+				transporter.use('stream', require('./signer').signer({
+					domainName: data.dkim.domain,
+					keySelector: data.dkim.selector,
+					privateKey: pemKey
+				}));
+			}
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
