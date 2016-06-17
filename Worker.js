@@ -87,7 +87,7 @@ start()
 
 			return enqueue('doSendMail', data)
 			.then(function() {
-				enqueue('callback', data)
+				return enqueue('callback', data)
 			})
 			.then(function() {
 				return callback();
