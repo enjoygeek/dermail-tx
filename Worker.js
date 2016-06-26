@@ -117,17 +117,8 @@ start()
 					// Compatibility with MTA-Worker
 					message.text = htmlToText.fromString(message.html);
 
-					var myAddress = data.from.address;
-
-					for (key in message.from) {
-						if (message.from[key].address == myAddress) {
-							delete message.from[key];
-						}
-					}
-
 					message.remoteSecret = config.remoteSecret;
 					message.accountId = data.accountId;
-					message.myAddress = myAddress;
 
 					// Extra data to help with remote debugging
 					message.TXExtra = {
@@ -174,6 +165,8 @@ start()
 			break;
 
 			case 'doSendMail':
+
+			return callback();
 
 			var transporter = nodemailer.createTransport({
 				direct: true,
