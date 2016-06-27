@@ -110,6 +110,7 @@ start()
 				mailparser.on("end", function(message) {
 					// dermail-smtp-inbound processMail();
 					message.cc = message.cc || [];
+					message.bcc = message.bcc || [];
 					message.attachments = message.attachments || [];
 					message.date = message.date.toISOString();
 					message.html = message.html || '';
