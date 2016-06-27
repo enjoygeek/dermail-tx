@@ -166,8 +166,6 @@ start()
 
 			case 'doSendMail':
 
-			return callback();
-
 			var transporter = nodemailer.createTransport({
 				direct: true,
 				name: hostname + '.' + tx.domainName
