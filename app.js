@@ -28,7 +28,7 @@ module.exports = function() {
 
 	app.post('/tx-hook', function(req, res, next) {
 
-		var remoteSecret = req.body.remoteSecret || null;
+		var remoteSecret = req.headers['x-remotesecret'] || null;
 
 		if (remoteSecret !== config.remoteSecret) {
 			return res.status(200).send({ok: false, error: 'Invalid remoteSecret.'});

@@ -38,9 +38,8 @@ var start = function() {
 		request
 		.post(config.tx.setup())
 		.timeout(10000)
-		.send({
-			remoteSecret: config.remoteSecret
-		})
+		.set('X-remoteSecret', config.remoteSecret)
+		.send({})
 		.set('Accept', 'application/json')
 		.end(function(err, res){
 			if (err) {
@@ -118,7 +117,6 @@ start()
 					// Compatibility with MTA-Worker
 					message.text = htmlToText.fromString(message.html);
 
-					message.remoteSecret = config.remoteSecret;
 					message.accountId = data.accountId;
 
 					// Extra data to help with remote debugging
@@ -132,6 +130,7 @@ start()
 					request
 					.post(config.tx.hook())
 					.timeout(10000)
+					.set('X-remoteSecret', config.remoteSecret)
 					.send(message)
 					.set('Accept', 'application/json')
 					.end(function(err, res){
@@ -140,7 +139,6 @@ start()
 						}
 						if (res.body.ok === true) {
 							return enqueue('notify', {
-								remoteSecret: config.remoteSecret,
 								userId: data.userId,
 								level: 'success',
 								msg: 'Message saved to Sent folder.'
@@ -193,7 +191,6 @@ start()
 					return callback(info);
 				}
 				return enqueue('notify', {
-					remoteSecret: config.remoteSecret,
 					userId: data.userId,
 					level: 'success',
 					msg: 'Message sent by ' + hostname
@@ -213,6 +210,7 @@ start()
 			request
 			.post(config.tx.notify())
 			.timeout(10000)
+			.set('X-remoteSecret', config.remoteSecret)
 			.send(data)
 			.set('Accept', 'application/json')
 			.end(function(err, res){
