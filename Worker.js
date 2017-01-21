@@ -76,9 +76,10 @@ start()
 
 		var callback = function(e) {
 			if (e) {
-				log.error({ message: 'Job ' + type + ' returns an error.', error: '[' + e.name + '] ' + e.message, stack: e.stack });
+				log.error({ message: 'Job ' + type + ' returns an error. Automatic retry is disabled.', error: e });
 			}
-			return done(e);
+            // We do not want it to retry automatically
+			return done();
 		}
 
 		switch (type) {
@@ -187,8 +188,15 @@ start()
 
 				log.info({ message: 'Outbound status', info: info });
 
-				if (info.accepted.length === 0) {
-					return callback(info);
+				if (info.accepted.length === 0 && info.pending.length > 0) {
+					// Possibly greylisted
+                    if (info.pending.reduce(function(yes, each) {
+                        if (each.response.toLowerCase().indexOf('greylist') !== -1) yes = true;
+                        return yes;
+                    }, false)) {
+                        // indeed greylisted
+                        return callback(new Error('Greylisted, try again later'));
+                    }
 				}
 				return enqueue('notify', {
 					userId: data.userId,
@@ -199,7 +207,7 @@ start()
 					return callback();
 				})
 				.catch(function(e) {
-					return callback();
+					return callback(e);
 				})
 			})
 
