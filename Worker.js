@@ -61,7 +61,10 @@ var enqueue = function(type, payload) {
 	return messageQ.add({
 		type: type,
 		payload: payload
-	}, config.Qconfig);
+	}, config.Qconfig)
+    .catch(function(e) {
+        log.error({ message: 'Error trying to enqueue. Automatic retry is disabled', type: type, payload: payload})
+    })
 }
 
 start()
@@ -76,10 +79,9 @@ start()
 
 		var callback = function(e) {
 			if (e) {
-				log.error({ message: 'Job ' + type + ' returns an error. Automatic retry is disabled.', error: e });
+				log.error({ message: 'Job ' + type + ' returns an error.', error: e });
 			}
-            // We do not want it to retry automatically
-			return done();
+			return done(e);
 		}
 
 		switch (type) {
@@ -91,9 +93,6 @@ start()
 			})
 			.then(function() {
 				return callback();
-			})
-			.catch(function(e) {
-				return callback(e);
 			})
 
 			break;
@@ -136,7 +135,8 @@ start()
 					.set('Accept', 'application/json')
 					.end(function(err, res){
 						if (err) {
-							return callback(err);
+                            log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: err.response})
+							return callback();
 						}
 						if (res.body.ok === true) {
 							return enqueue('notify', {
@@ -147,11 +147,9 @@ start()
 							.then(function() {
 								return callback();
 							})
-							.catch(function(e) {
-								return callback();
-							})
 						}else{
-							return callback(res.body);
+                            log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: res.body })
+							return callback();
 						}
 					});
 				});
@@ -159,7 +157,8 @@ start()
 				stream.pipe(mailparser);
 
 			}catch(e) {
-				return callback(e);
+                log.error({ message: 'Error composing email to be saved. Automatic retry is disabled', error: e })
+				return callback();
 			}
 
 			break;
@@ -182,11 +181,14 @@ start()
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
-					log.error({ message: 'sendMail returns an error, info attached', info: err.errors })
-					return callback(err);
+					log.error({ message: 'sendMail returns an error. Automatic retry is disabled', info: err.errors })
+					return callback();
 				}
 
 				log.info({ message: 'Outbound status', info: info });
+
+                var returnLevel = 'success';
+                var returnMsg = 'Message sent by ' + hostname;
 
 				if (info.accepted.length === 0 && info.pending.length > 0) {
 					// Possibly greylisted
@@ -195,19 +197,20 @@ start()
                         return yes;
                     }, false)) {
                         // indeed greylisted
-                        return callback(new Error('Greylisted, try again later'));
+                        return callback(new Error('Greylisted, will try again later'));
                     }
-				}
+				}else if (info.rejected.length > 0) {
+                    returnLevel = 'error';
+                    returnMsg = 'Rejected. Please check logs for details.'
+                }
+
 				return enqueue('notify', {
 					userId: data.userId,
-					level: 'success',
-					msg: 'Message sent by ' + hostname
+					level: returnLevel,
+					msg: returnMsg
 				})
 				.then(function() {
 					return callback();
-				})
-				.catch(function(e) {
-					return callback(e);
 				})
 			})
 
@@ -223,12 +226,14 @@ start()
 			.set('Accept', 'application/json')
 			.end(function(err, res){
 				if (err) {
-					return callback(err);
+                    log.error({ message: 'Error trying to notify. Automatic retry is disabled', error: err.response})
+					return callback();
 				}
 				if (res.body.ok === true) {
 					return callback();
 				}else{
-					return callback(res.body);
+                    log.error({ message: 'Error trying to notify. Automatic retry is disabled', error: res.body})
+					return callback();
 				}
 			});
 
