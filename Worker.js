@@ -7,12 +7,12 @@ var os = require('os'),
 	mailcomposer = require("mailcomposer"),
 	MailParser = require("mailparser").MailParser,
 	htmlToText = require('html-to-text'),
-	nodemailer = require('nodemailer'),
 	hostname = os.hostname(),
 	fs = Promise.promisifyAll(require('fs')),
 	bunyan = require('bunyan'),
 	stream = require('gelf-stream'),
-	log;
+	log,
+    tx;
 
 Promise.promisifyAll(redis.RedisClient.prototype);
 
@@ -49,7 +49,7 @@ var start = function() {
 				return reject(new Error('Cannot get S3 credentials.'));
 			}
 
-			var tx = res.body;
+			tx = res.body;
 
 			log.info('Process ' + process.pid + ' is running as an TX-Worker.');
 			return resolve(tx);
@@ -87,26 +87,17 @@ start()
 		switch (type) {
 			case 'sendMail':
 
-			return enqueue('doSendMail', data)
-			.then(function() {
-				return enqueue('callback', data)
-			})
-			.then(function() {
-				return callback();
-			})
-
-			break;
-
-			case 'callback':
-
-			try {
-				var mail = mailcomposer(data);
-				var stream = mail.createReadStream();
+            try {
 				var mailparser = new MailParser({
 					streamAttachments: true
 				});
+                var readStream = request.get(data.url);
+                readStream.on('error', function(e) {
+                    log.error({ message: 'Create read stream in sendMail throws an error', error: '[' + e.name + '] ' + e.message, stack: e.stack });
+                    return callback(e);
+                })
 
-				mailparser.on("end", function(message) {
+                mailparser.on("end", function(message) {
 					// dermail-smtp-inbound processMail();
 					message.cc = message.cc || [];
 					message.bcc = message.bcc || [];
@@ -119,6 +110,10 @@ start()
 
 					message.accountId = data.accountId;
 
+                    message.connection = {
+                        tmpPath: data.tmpPath
+                    };
+
 					// Extra data to help with remote debugging
 					message.TXExtra = {
 						attemptsMade: job.attemptsMade,
@@ -127,39 +122,50 @@ start()
 						jobId: job.jobId
 					};
 
-					request
-					.post(config.tx.hook())
-					.timeout(10000)
-					.set('X-remoteSecret', config.remoteSecret)
-					.send(message)
-					.set('Accept', 'application/json')
-					.end(function(err, res){
-						if (err) {
-                            log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: err.response})
-							return callback();
-						}
-						if (res.body.ok === true) {
-							return enqueue('notify', {
-								userId: data.userId,
-								level: 'success',
-								msg: 'Message saved to Sent folder.'
-							})
-							.then(function() {
-								return callback();
-							})
-						}else{
-                            log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: res.body })
-							return callback();
-						}
-					});
-				});
+                    return enqueue('doSendMail', message)
+        			.then(function() {
+        				return enqueue('callback', message)
+        			})
+        			.then(function() {
+        				return callback();
+        			})
+                })
 
-				stream.pipe(mailparser);
-
-			}catch(e) {
+                readStream.pipe(mailparser);
+            } catch(e) {
                 log.error({ message: 'Error composing email to be saved. Automatic retry is disabled', error: e })
 				return callback();
-			}
+            }
+
+			break;
+
+			case 'callback':
+
+            request
+            .post(config.tx.hook())
+            .timeout(10000)
+            .set('X-remoteSecret', config.remoteSecret)
+            .send(data)
+            .set('Accept', 'application/json')
+            .end(function(err, res){
+                if (err) {
+                    log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: err.response})
+                    return callback();
+                }
+                if (res.body.ok === true) {
+                    return enqueue('notify', {
+                        userId: data.userId,
+                        level: 'success',
+                        msg: 'Message saved to Sent folder.'
+                    })
+                    .then(function() {
+                        return callback();
+                    })
+                }else{
+                    log.error({ message: 'Error trying to save sent email. Automatic retry is disabled', error: res.body })
+                    return callback();
+                }
+            });
 
 			break;
 
@@ -169,15 +175,6 @@ start()
 				direct: true,
 				name: hostname + '.' + tx.domainName
 			});
-
-			if (typeof data.dkim === 'object') {
-				var pemKey = '-----BEGIN RSA PRIVATE KEY-----\r\n' + data.dkim.privateKey.replace(/.{78}/g, '$&\r\n') + '\r\n-----END RSA PRIVATE KEY-----';
-				transporter.use('stream', require('./signer').signer({
-					domainName: data.dkim.domain,
-					keySelector: data.dkim.selector,
-					privateKey: pemKey
-				}));
-			}
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
