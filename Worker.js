@@ -188,7 +188,7 @@ start()
 
             var readStream = request.get(data.url);
             readStream.on('error', function(error) {
-                log.error({ message: 'readStream in doSendMail returns an error. Automatic retry is disabled', info: errors })
+                log.error({ message: 'readStream in doSendMail returns an error. Automatic retry is disabled', info: error })
                 return callback();
             })
 
@@ -198,7 +198,7 @@ start()
                 cc: data.envelope.cc,
                 bcc: data.envelope.bcc,
                 raw: readStream
-            }), function(err, info) {
+            }, function(err, info) {
 				if (err) {
 					log.error({ message: 'Transporter sendMail returns an error. Automatic retry is disabled', info: err.errors })
 					return callback();
