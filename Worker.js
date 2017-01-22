@@ -186,7 +186,12 @@ start()
 				name: hostname + '.' + tx.domainName
 			});
 
-			transporter.sendMail(data, function(err, info) {
+			transporter.sendMail({
+                envelope: data.envelope,
+                raw: {
+                    path: data.url
+                }
+            }, function(err, info) {
 				if (err) {
 					log.error({ message: 'sendMail returns an error. Automatic retry is disabled', info: err.errors })
 					return callback();
