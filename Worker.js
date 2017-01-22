@@ -111,8 +111,6 @@ start()
 					message.accountId = data.accountId;
                     message.userId = data.userId;
 
-                    delete message.headers
-
                     message.connection = {
                         tmpPath: data.tmpPath
                     };
@@ -125,7 +123,16 @@ start()
 						jobId: job.jobId
 					};
 
-                    return enqueue('doSendMail', message)
+                    return enqueue('doSendMail', {
+                        userId: data.userId,
+                        url: data.url,
+                        envelope: {
+                            to: message.to,
+                            from: message.from,
+                            cc: message.cc,
+                            bcc: message.bcc
+                        }
+                    })
         			.then(function() {
         				return enqueue('callback', message)
         			})
