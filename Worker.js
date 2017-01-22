@@ -127,10 +127,10 @@ start()
                         userId: data.userId,
                         url: data.url,
                         envelope: {
-                            to: message.to.map(function(s) { return s.address }).join(','),
-                            from: message.from.map(function(s) { return s.address }).join(','),
-                            cc: message.cc.map(function(s) { return s.address }).join(','),
-                            bcc: message.bcc.map(function(s) { return s.address }).join(',')
+                            to: message.to,
+                            from: message.from,
+                            cc: message.cc,
+                            bcc: message.bcc
                         }
                     })
         			.then(function() {
@@ -186,14 +186,21 @@ start()
 				name: hostname + '.' + tx.domainName
 			});
 
+            var readStream = request.get(data.url);
+            readStream.on('error', function(error) {
+                log.error({ message: 'readStream in doSendMail returns an error. Automatic retry is disabled', info: errors })
+                return callback();
+            })
+
 			transporter.sendMail({
-                envelope: data.envelope,
-                raw: {
-                    path: data.url
-                }
-            }, function(err, info) {
+                to: data.envelope.to,
+                from: data.envelope.from,
+                cc: data.envelope.cc,
+                bcc: data.envelope.bcc,
+                raw: readStream
+            }), function(err, info) {
 				if (err) {
-					log.error({ message: 'sendMail returns an error. Automatic retry is disabled', info: err.errors })
+					log.error({ message: 'Transporter sendMail returns an error. Automatic retry is disabled', info: err.errors })
 					return callback();
 				}
 
