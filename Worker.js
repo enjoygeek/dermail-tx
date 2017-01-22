@@ -193,7 +193,7 @@ start()
 				if (info.accepted.length === 0 && info.pending.length > 0) {
 					// Possibly greylisted
                     if (info.pending.reduce(function(yes, each) {
-                        if (each.response.toLowerCase().indexOf('greylist') !== -1) yes = true;
+                        if (each.response && each.response.toLowerCase().indexOf('greylist') !== -1) yes = true;
                         return yes;
                     }, false)) {
                         // indeed greylisted
