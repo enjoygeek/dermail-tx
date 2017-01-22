@@ -186,18 +186,12 @@ start()
 				name: hostname + '.' + tx.domainName
 			});
 
-            var readStream = request.get(data.url);
-            readStream.on('error', function(error) {
-                log.error({ message: 'readStream in doSendMail returns an error. Automatic retry is disabled', info: error })
-                return callback();
-            })
-
 			transporter.sendMail({
                 to: data.envelope.to,
                 from: data.envelope.from,
                 cc: data.envelope.cc,
                 bcc: data.envelope.bcc,
-                raw: readStream
+                raw: request.get(data.url)
             }, function(err, info) {
 				if (err) {
 					log.error({ message: 'Transporter sendMail returns an error. Automatic retry is disabled', info: err.errors })
