@@ -91,9 +91,9 @@ start()
 				var mailparser = new MailParser({
 					streamAttachments: true
 				});
-                var readStream = request.get(data.url);
-                readStream.on('error', function(e) {
-                    log.error({ message: 'Create read stream in sendMail throws an error', error: '[' + e.name + '] ' + e.message, stack: e.stack });
+                var parseStream = request.get(data.url);
+                parseStream.on('error', function(e) {
+                    log.error({ message: 'Create parse stream in sendMail throws an error', error: '[' + e.name + '] ' + e.message, stack: e.stack });
                     return callback(e);
                 })
 
@@ -123,25 +123,44 @@ start()
 						jobId: job.jobId
 					};
 
-                    return enqueue('doSendMail', {
-                        userId: data.userId,
-                        url: data.url,
-                        envelope: {
-                            to: message.to,
-                            from: message.from,
-                            cc: message.cc,
-                            bcc: message.bcc
-                        }
+                    var readStream = request.get(data.url);
+                    readStream.on('error', function(e) {
+                        log.error({ message: 'Create read stream in sendMail throws an error', error: '[' + e.name + '] ' + e.message, stack: e.stack });
+                        return callback(e);
                     })
-        			.then(function() {
-        				return enqueue('callback', message)
-        			})
-        			.then(function() {
-        				return callback();
-        			})
+
+                    var writeStream = fs.createWriteStream(data.tmpPath);
+                    writeStream.on('error', function(e) {
+                        log.error({ message: 'Create write stream in sendMail throws an error', error: '[' + e.name + '] ' + e.message, stack: e.stack });
+                        return callback(e);
+                    })
+
+                    writeStream.on('finish', function() {
+                        enqueue('doSendMail', {
+                            userId: data.userId,
+                            tmpPath: data.tmpPath,
+                            sendOptions: {
+                                to: message.to,
+                                from: message.from,
+                                cc: message.cc,
+                                bcc: message.bcc,
+                                raw: {
+                                    path: data.tmpPath
+                                }
+                            }
+                        })
+            			.then(function() {
+            				return enqueue('callback', message)
+            			})
+            			.then(function() {
+            				return callback();
+            			})
+                    })
+
+                    readStream.pipe(writeStream)
                 })
 
-                readStream.pipe(mailparser);
+                parseStream.pipe(mailparser);
             } catch(e) {
                 log.error({ message: 'Error composing email to be saved. Automatic retry is disabled', error: e })
 				return callback();
@@ -186,13 +205,7 @@ start()
 				name: hostname + '.' + tx.domainName
 			});
 
-			transporter.sendMail({
-                to: data.envelope.to,
-                from: data.envelope.from,
-                cc: data.envelope.cc,
-                bcc: data.envelope.bcc,
-                raw: request.get(data.url)
-            }, function(err, info) {
+			transporter.sendMail(data.sendOptions, function(err, info) {
 				if (err) {
 					log.error({ message: 'Transporter sendMail returns an error. Automatic retry is disabled', info: err.errors })
 					return callback();
@@ -217,11 +230,16 @@ start()
                     returnMsg = 'Rejected. Please check logs for details.'
                 }
 
-				return enqueue('notify', {
-					userId: data.userId,
-					level: returnLevel,
-					msg: returnMsg
-				})
+                return fs.unlinkAsync(data.tmpPath).catch(function(e) {
+                    log.error({ message: 'Error trying to remove TX raw', error: e })
+                })
+                .then(function() {
+                    return enqueue('notify', {
+    					userId: data.userId,
+    					level: returnLevel,
+    					msg: returnMsg
+    				})
+                })
 				.then(function() {
 					return callback();
 				})
