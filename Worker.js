@@ -127,10 +127,10 @@ start()
                         userId: data.userId,
                         url: data.url,
                         envelope: {
-                            to: message.to,
-                            from: message.from,
-                            cc: message.cc,
-                            bcc: message.bcc
+                            to: message.to.map(function(s) { return s.address }).join(','),
+                            from: message.from.map(function(s) { return s.address }).join(','),
+                            cc: message.cc.map(function(s) { return s.address }).join(','),
+                            bcc: message.bcc.map(function(s) { return s.address }).join(',')
                         }
                     })
         			.then(function() {
