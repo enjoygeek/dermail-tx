@@ -111,6 +111,8 @@ start()
 					message.accountId = data.accountId;
                     message.userId = data.userId;
 
+                    delete message.headers
+
                     message.connection = {
                         tmpPath: data.tmpPath
                     };
