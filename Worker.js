@@ -4,7 +4,7 @@ var os = require('os'),
 	config = require('./config'),
 	Promise = require('bluebird'),
 	request = require('superagent'),
-	mailcomposer = require("mailcomposer"),
+    nodemailer = require('nodemailer'),
 	MailParser = require("mailparser").MailParser,
 	htmlToText = require('html-to-text'),
 	hostname = os.hostname(),
@@ -109,6 +109,7 @@ start()
 					message.text = htmlToText.fromString(message.html);
 
 					message.accountId = data.accountId;
+                    message.userId = data.userId;
 
                     message.connection = {
                         tmpPath: data.tmpPath
