@@ -12,6 +12,7 @@ var os = require('os'),
 	fs = Promise.promisifyAll(require('fs')),
 	bunyan = require('bunyan'),
 	stream = require('gelf-stream'),
+    fs = require('fs'),
 	log;
 
 Promise.promisifyAll(redis.RedisClient.prototype);
@@ -89,9 +90,6 @@ start()
 
 			return enqueue('doSendMail', data)
 			.then(function() {
-				return enqueue('callback', data)
-			})
-			.then(function() {
 				return callback();
 			})
 
@@ -100,13 +98,23 @@ start()
 			case 'callback':
 
 			try {
-				var mail = mailcomposer(data);
-				var stream = mail.createReadStream();
+				var stream = fs.createReadStream(data.tmp.name)
 				var mailparser = new MailParser({
 					streamAttachments: true
 				});
 
 				mailparser.on("end", function(message) {
+                    try {
+                        if (data.tmp.fd <= 0) return
+                        fs.closeSync(data.tmp.fd)
+                    } catch (e) {
+                        // don't worry about it
+                    }
+                    try {
+                        fs.unlinkSync(data.tmp.name);
+                    } catch (e) {
+                        // don't worry about it
+                    }
 					// dermail-smtp-inbound processMail();
 					message.cc = message.cc || [];
 					message.bcc = message.bcc || [];
@@ -117,7 +125,7 @@ start()
 					// Compatibility with MTA-Worker
 					message.text = htmlToText.fromString(message.html);
 
-					message.accountId = data.accountId;
+					message.accountId = data.mail.accountId;
 
 					// Extra data to help with remote debugging
 					message.TXExtra = {
@@ -140,7 +148,7 @@ start()
 						}
 						if (res.body.ok === true) {
 							return enqueue('notify', {
-								userId: data.userId,
+								userId: data.mail.userId,
 								level: 'success',
 								msg: 'Message saved to Sent folder.'
 							})
@@ -178,6 +186,15 @@ start()
 					privateKey: pemKey
 				}));
 			}
+
+            transporter.use('stream', require('./save').save({
+                saveCb: function(tmp) {
+                    return enqueue('callback', {
+                        mail: data,
+                        tmp: tmp
+                    })
+                }
+            }));
 
 			transporter.sendMail(data, function(err, info) {
 				if (err) {
